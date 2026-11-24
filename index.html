@@ -83,6 +83,14 @@ button:hover{filter:brightness(1.05)}
 .blabels span.best{background:var(--accent-soft);color:var(--accent)}
 .blabels span.truth{border-color:var(--ok)}
 .bpct span{font-size:.62rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.duo{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;height:120px;border-bottom:1px solid var(--line);
+  background:linear-gradient(to top,transparent calc(50% - .5px),var(--line) calc(50% - .5px),var(--line) calc(50% + .5px),transparent calc(50% + .5px))}
+.duo .col{position:relative;height:100%}
+.duo i{position:absolute;bottom:0;border-radius:3px 3px 0 0}
+.duo i.b{left:0;right:0;background:var(--accent);opacity:.45}
+.duo i.g{left:25%;right:25%;background:var(--ok)}
+.bpct.blue span{color:var(--accent)}
+.bpct.green span{color:var(--ok);font-weight:600}
 .est{font-size:.82rem;margin-top:6px;color:var(--muted)}
 .est b{color:var(--ink)}
 .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.8rem;color:var(--muted);margin-top:10px}
@@ -182,7 +190,7 @@ canvas{width:100%;display:block}
         <p class="hint" style="margin-top:0" data-i18n="evoHint"></p>
         <div class="freq" id="freq"></div>
         <div class="legend">
-          <span><i style="background:var(--accent);opacity:.75"></i><span data-i18n="lgShown"></span></span>
+          <span><i style="background:var(--accent);opacity:.45"></i><span data-i18n="lgShown"></span></span>
           <span><i style="background:var(--ok);opacity:.85"></i><span data-i18n="lgProb"></span></span>
           <span><i style="background:var(--accent-soft)"></i><span data-i18n="lgTop"></span></span>
           <span><i style="border:2px solid var(--ok)"></i><span data-i18n="lgTrue"></span></span>
@@ -214,7 +222,7 @@ const I18N = {
     rankH: 'Codes les plus probables',
     rankHint: 'Tous les codes classés selon leur probabilité d’être le bon, d’après les seuls relevés. Après « Dévoiler le code », le vrai code est surligné en vert.',
     evoH: 'Évolution jour après jour',
-    evoHint: 'En bleu : les chiffres qu’on voit sortir. En vert : la probabilité que chaque chiffre soit le bon.',
+    evoHint: 'Même échelle de 0 à 100 % (trait du milieu = 50 %). Barre bleue : part des jours où le chiffre est affiché. Barre verte, par-dessus : probabilité que ce soit le bon chiffre. Les chiffres sous chaque roue donnent les deux valeurs, dans les mêmes couleurs.',
     lgShown: 'chiffres affichés', lgProb: 'probabilité d’être le bon chiffre', lgTop: 'chiffre le plus probable', lgTrue: 'vrai chiffre (après « Dévoiler »)',
     confH: 'Confiance dans le code le plus probable',
     confHint: 'Probabilité du code en tête, jour après jour. Après « Dévoiler » : vert quand ce code est le bon, rouge sinon.',
@@ -247,7 +255,7 @@ const I18N = {
     rankH: 'Most likely codes',
     rankHint: 'All codes ranked by their probability of being right, from the observations alone. After “Reveal code”, the true code is highlighted in green.',
     evoH: 'Day by day',
-    evoHint: 'Blue: the digits we see. Green: the probability that each digit is the right one.',
+    evoHint: 'Same 0–100% scale (middle line = 50%). Blue bar: share of days the digit is shown. Green bar, on top: probability that it is the right digit. The numbers under each wheel give both values, in the same colours.',
     lgShown: 'digits shown', lgProb: 'probability of being the right digit', lgTop: 'most likely digit', lgTrue: 'true digit (after “Reveal”)',
     confH: 'Confidence in the most likely code',
     confHint: 'Probability of the leading code, day by day. After “Reveal”: green when that code is right, red otherwise.',
@@ -517,14 +525,12 @@ function renderFreq() {
     const top = pm.indexOf(Math.max(...pm));
     const el = document.createElement('div');
     el.className = 'fw';
+    // One chart per wheel, same 0-100 % scale: blue = share of days the digit is shown, green (on top) = probability it is the code
     el.innerHTML = `<h4>${T().wheel} ${i + 1}</h4>
-      <div class="rowlbl">${T().shownPct}</div>
-      <div class="bars">${f.map(x => `<div class="bar" style="height:${x / max * 100}%"></div>`).join('')}</div>
-      <div class="bpct">${f.map(x => `<span>${days ? pct(x / days) : ''}</span>`).join('')}</div>
+      <div class="duo">${f.map((x, d) => `<div class="col" title="${d} · ${T().lgShown} ${days ? pct(x / days) : 0} % · ${T().lgProb} ${days ? pct(pm[d]) : 0} %"><i class="b" style="height:${days ? x / days * 100 : 0}%"></i><i class="g" style="height:${days ? pm[d] * 100 : 0}%"></i></div>`).join('')}</div>
       <div class="blabels">${f.map((x, d) => `<span class="${days && d === top ? 'best' : ''} ${revealed && S.code[i] === d ? 'truth' : ''}">${d}</span>`).join('')}</div>
-      <div class="rowlbl">${T().probPct}</div>
-      <div class="bars code">${pm.map(x => `<div class="bar" style="height:${x * 100}%"></div>`).join('')}</div>
-      <div class="bpct">${pm.map(x => `<span>${days ? pct(x) : ''}</span>`).join('')}</div>
+      <div class="bpct blue">${f.map(x => `<span>${days ? pct(x / days) : ''}</span>`).join('')}</div>
+      <div class="bpct green">${pm.map(x => `<span>${days ? pct(x) : ''}</span>`).join('')}</div>
       <div class="est">${days ? `${T().mostLikely} <b>${top}</b> (${pctTxt(pm[top])})` : T().noObs}</div>`;
     box.appendChild(el);
   });
