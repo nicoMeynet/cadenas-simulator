@@ -54,7 +54,16 @@ button:hover{filter:brightness(1.05)}
 .wheel span.cur{font-size:2rem;opacity:1;line-height:1.3}
 .wheel.bump span.cur{animation:roll .35s ease}
 @keyframes roll{from{transform:translateY(-30px);opacity:0}to{transform:none;opacity:1}}
-@media (max-width:480px){.wheel{width:42px;height:100px}.wheel span.cur{font-size:1.6rem}.body{gap:6px;padding:14px 12px}}
+@media (max-width:480px){.wheel{height:100px}.body{padding:14px 12px}}
+.lockzone{container-type:inline-size}
+.body{gap:min(10px,calc(48px / var(--n,4)));max-width:100%}
+.wheel{width:min(56px,calc((100cqw - 40px) / var(--n,4) - min(10px,calc(48px / var(--n,4)))))}
+.wheel span{font-size:min(1.1rem,calc((100cqw - 40px) / var(--n,4) * .36))}
+.wheel span.cur{font-size:min(2rem,calc((100cqw - 40px) / var(--n,4) * .6))}
+.many .body{padding:12px 10px}
+.many .wheel{height:74px;border-radius:7px}
+.many .wheel span:not(.cur){display:none}
+.many .wheel span.cur{font-size:min(2rem,calc((100cqw - 40px) / var(--n,4) * .85))}
 .daylabel{font-size:.9rem;color:var(--muted)}
 
 .alert{margin-top:10px;padding:9px 12px;border-radius:9px;font-size:.9rem;display:none}
@@ -116,7 +125,7 @@ canvas{width:100%;display:block}
       <input id="speed" type="range" min="1" max="10" value="4">
 
       <label for="n" style="margin-top:14px">Nombre de chiffres</label>
-      <select id="n"><option>3</option><option selected>4</option><option>5</option><option>6</option></select>
+      <select id="n"><option>3</option><option selected>4</option><option>5</option><option>6</option><option>8</option><option>10</option><option>12</option></select>
 
       <details class="backstage" id="backstage">
         <summary>Coulisses : ce que fait vraiment le propriétaire (vous ne le savez pas)</summary>
@@ -204,6 +213,7 @@ function realOffset(c) {
 const emptyFreq = n => Array.from({ length: n }, () => Array(10).fill(0));
 const EPS = 0.03, LAMBDA = 0.7;
 const crans = (a, b) => a === b ? `${a} cran${a > 1 ? 's' : ''}` : `${a} à ${b} crans`;
+const fmtCode = c => c.length > 6 ? c.join('') : c.join(' ');
 const pctTxt = p => p >= .995 ? '> 99 %' : p < .01 ? '< 1 %' : Math.floor(p * 100) + ' %';
 
 // Every habit the owner could have: a contiguous range of offsets (one direction), or both directions
@@ -271,13 +281,17 @@ function infer(freq, N) {
   for (const r of res) for (let i = 0; i < n; i++) for (let c = 0; c < 10; c++) marg[i][c] += r.w / Z * r.post[i][c];
   // Candidate codes: the most likely digits of each wheel, then the exact probability of each combination
   const act = res.filter(r => r.w / Z > 1e-6);
-  const lists = marg.map(m => {
-    const idx = [...Array(10).keys()].sort((a, b) => m[b] - m[a]);
-    const cap = n >= 5 ? 3 : 4;
-    return idx.filter((d, k) => k === 0 || (k < cap && m[d] >= 0.01));
-  });
-  let combos = [[]];
-  for (const L of lists) { const nx = []; for (const cc of combos) for (const d of L) nx.push([...cc, d]); combos = nx; }
+  // Candidate codes: beam search on the per-wheel digit probabilities (keeps the 200 best partial codes),
+  // then the exact probability of each candidate
+  let beam = [{ code: [], s: 1 }];
+  for (const m of marg) {
+    const idx = [...Array(10).keys()].sort((a, b) => m[b] - m[a]).filter((d, k) => k === 0 || (k < 5 && m[d] >= 0.001));
+    const nx = [];
+    for (const b of beam) for (const d of idx) nx.push({ code: [...b.code, d], s: b.s * m[d] });
+    nx.sort((a, b) => b.s - a.s);
+    beam = nx.slice(0, 200);
+  }
+  const combos = beam.map(b => b.code);
   const out = combos.map(code => {
     let pr = 0, bw = -1, bb = act[0].b;
     for (const r of act) {
@@ -326,6 +340,8 @@ function newGame() {
     days: 0, freq: emptyFreq(n), inf: infer(emptyFreq(n), 0), conf: []
   };
   $('reveal').textContent = 'Dévoiler le code';
+  document.documentElement.style.setProperty('--n', n);
+  document.documentElement.classList.toggle('many', n > 6);
   renderWheels(false);
   render();
 }
@@ -358,10 +374,10 @@ function renderWheels(anim) {
 
 function render() {
   const days = S.days;
-  $('daylabel').textContent = days ? `Jour ${days} : cadenas fermé sur ${S.shown.join(' ')}` : 'Jour 0 : pas encore d\'observation';
+  $('daylabel').textContent = days ? `Jour ${days} : cadenas fermé sur ${fmtCode(S.shown)}` : 'Jour 0 : pas encore d\'observation';
   const tc = $('truecode');
   tc.className = 'truecode' + (revealed ? ' on' : '');
-  tc.innerHTML = 'Vrai code : <b>' + (revealed ? S.code.join(' ') : S.code.map(() => '?').join(' ')) + '</b>';
+  tc.innerHTML = 'Vrai code : <b>' + fmtCode(revealed ? S.code : S.code.map(() => '?')) + '</b>';
 
   const al = $('alert');
   if (!days) al.className = 'alert';
@@ -369,10 +385,10 @@ function render() {
     const t = S.inf[0], good = t.key === S.code.join('');
     if (t.p >= .95) {
       al.className = 'alert ' + (revealed && !good ? 'bad' : 'ok') + ' show';
-      al.textContent = `Code trouvé au jour ${days} : ${t.code.join(' ')} (${pctTxt(t.p)}), habitude « ${t.b.label} »` + (revealed ? (good ? ' : correct.' : ' : faux.') : '.');
+      al.textContent = `Code trouvé au jour ${days} : ${fmtCode(t.code)} (${pctTxt(t.p)}), habitude « ${t.b.label} »` + (revealed ? (good ? ' : correct.' : ' : faux.') : '.');
     } else {
       al.className = 'alert info show';
-      al.textContent = `En cours : code le plus probable ${t.code.join(' ')} (${pctTxt(t.p)}). Il faut encore des relevés pour en être sûr.`;
+      al.textContent = `En cours : code le plus probable ${fmtCode(t.code)} (${pctTxt(t.p)}). Il faut encore des relevés pour en être sûr.`;
     }
   }
   renderInf();
@@ -383,8 +399,8 @@ function renderInf() {
   const box = $('inf');
   if (!S.days) { box.innerHTML = '<p class="hint">Démarrez la simulation : les codes candidats apparaîtront ici, classés par probabilité.</p>'; return; }
   const truth = S.code.join(''), top = S.inf.slice(0, 10);
-  const row = (n, g, p, ok, label) => `<div class="rrow${ok ? ' truth' : ''}"><span class="rn">${n}</span><span class="rc">${g.join(' ')}</span><span class="rbar"><i style="width:${Math.max(.6, p * 100)}%"></i></span><span class="rp">${pctTxt(p)}</span><span class="rl">${ok ? '<b class="tag">VRAI CODE</b> ' : ''}${label}</span></div>`;
-  let h = `<div class="rank" style="--cw:${S.n * 2 + 1}ch">`;
+  const row = (n, g, p, ok, label) => `<div class="rrow${ok ? ' truth' : ''}"><span class="rn">${n}</span><span class="rc">${fmtCode(g)}</span><span class="rbar"><i style="width:${Math.max(.6, p * 100)}%"></i></span><span class="rp">${pctTxt(p)}</span><span class="rl">${ok ? '<b class="tag">VRAI CODE</b> ' : ''}${label}</span></div>`;
+  let h = `<div class="rank" style="--cw:${S.n > 6 ? S.n + 1 : S.n * 2 + 1}ch">`;
   top.forEach((g, i) => { h += row(i + 1, g.code, g.p, revealed && g.key === truth, 'si elle tourne ' + g.b.label); });
   if (revealed && !top.some(g => g.key === truth)) {
     const idx = S.inf.findIndex(g => g.key === truth);
