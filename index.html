@@ -214,6 +214,7 @@ const emptyFreq = n => Array.from({ length: n }, () => Array(10).fill(0));
 const EPS = 0.03, LAMBDA = 0.7;
 const crans = (a, b) => a === b ? `${a} cran${a > 1 ? 's' : ''}` : `${a} à ${b} crans`;
 const fmtCode = c => c.length > 6 ? c.join('') : c.join(' ');
+const STOP_AT = 0.99;
 const pctTxt = p => p >= .995 ? '> 99 %' : p < .01 ? '< 1 %' : Math.floor(p * 100) + ' %';
 
 // Every habit the owner could have: a contiguous range of offsets (one direction), or both directions
@@ -359,6 +360,8 @@ function step() {
   S.conf.push({ p: S.inf[0].p, key: S.inf[0].key });
   renderWheels(true);
   render();
+  // Stop once the leading code reaches 99 % (only the first time: pressing Démarrer again keeps going)
+  if (S.inf[0].p >= STOP_AT && !S.autoStopped) { S.autoStopped = true; stopAuto(); render(); }
 }
 
 function renderWheels(anim) {
@@ -383,9 +386,9 @@ function render() {
   if (!days) al.className = 'alert';
   else {
     const t = S.inf[0], good = t.key === S.code.join('');
-    if (t.p >= .95) {
+    if (t.p >= STOP_AT) {
       al.className = 'alert ' + (revealed && !good ? 'bad' : 'ok') + ' show';
-      al.textContent = `Code trouvé au jour ${days} : ${fmtCode(t.code)} (${pctTxt(t.p)}), habitude « ${t.b.label} »` + (revealed ? (good ? ' : correct.' : ' : faux.') : '.');
+      al.textContent = `Code trouvé au jour ${days} : ${fmtCode(t.code)} (${pctTxt(t.p)}), habitude « ${t.b.label} »` + (revealed ? (good ? ' : c’est le bon.' : ' : ce n’est pas le bon.') : '.') + (timer ? '' : ' Arrêt automatique à 99 % (Démarrer pour continuer).');
     } else {
       al.className = 'alert info show';
       al.textContent = `En cours : code le plus probable ${fmtCode(t.code)} (${pctTxt(t.p)}). Il faut encore des relevés pour en être sûr.`;
