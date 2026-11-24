@@ -21,6 +21,10 @@ Les rares jours où le propriétaire retombe sur le bon chiffre (tour complet, o
 
 ## Utilisation
 
-Tout tient dans un seul fichier, `index.html`, sans dépendance : il suffit de l'ouvrir dans un navigateur.
+Tout tient dans un seul fichier, `index.html`, sans dépendance : il suffit de l'ouvrir dans un navigateur. La page existe en français et en anglais (bouton FR / EN en haut, ou `?lang=en` dans l'adresse).
+
+## In English
+
+A combination lock's owner never changes the code, but scrambles the wheels the same way every time they close it. This page shows that the code can be worked out from the digits seen on the closed lock, day after day, without knowing anything about the owner's habit. Switch to English with the FR / EN button, or open https://nicomeynet.github.io/cadenas-simulator/?lang=en
 
 © 2026 Nicolas Meynet

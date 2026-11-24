@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" id="html">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -106,45 +106,54 @@ button:hover{filter:brightness(1.05)}
 details.backstage{margin-top:18px;border:1px dashed var(--line);border-radius:10px;padding:8px 12px}
 details.backstage summary{cursor:pointer;font-size:.85rem;color:var(--muted);font-weight:600}
 canvas{width:100%;display:block}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.langs{display:flex;flex-shrink:0;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-top:4px}
+.langs button{border:0;border-radius:0;padding:5px 10px;font-size:.85rem;background:var(--panel)}
+.langs button.on{background:var(--accent);color:#fff}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Le cadenas qu'on referme toujours pareil</h1>
-  <p class="lead">Chaque jour le propriétaire ouvre le cadenas (donc met le bon code), puis le referme en tournant les roues. Vous ne voyez que les chiffres affichés une fois fermé, et vous ne savez rien de ses habitudes. Le simulateur les tire au hasard en coulisses, puis devine le code à partir des seuls relevés.</p>
+  <div class="top">
+    <h1 data-i18n="title"></h1>
+    <div class="langs" role="group" aria-label="Langue / Language">
+      <button data-lang="fr">FR</button><button data-lang="en">EN</button>
+    </div>
+  </div>
+  <p class="lead" data-i18n="lead"></p>
 
   <div class="layout">
     <!-- Controls -->
     <div class="card">
       <div class="btns" style="margin-top:0">
-        <button class="primary" id="auto" style="flex:1 1 100%;font-size:1.05rem;padding:11px">▶ Démarrer</button>
-        <button id="reveal" style="flex:1">Dévoiler le code</button>
-        <button id="reset" style="flex:1">Nouveau code</button>
+        <button class="primary" id="auto" style="flex:1 1 100%;font-size:1.05rem;padding:11px"></button>
+        <button id="reveal" style="flex:1"></button>
+        <button id="reset" style="flex:1" data-i18n="newCode"></button>
       </div>
-      <label for="speed">Vitesse : <b id="speedv"></b></label>
+      <label for="speed"><span data-i18n="speed"></span> <b id="speedv"></b></label>
       <input id="speed" type="range" min="1" max="10" value="4">
 
-      <label for="n" style="margin-top:14px">Nombre de chiffres</label>
+      <label for="n" style="margin-top:14px" data-i18n="digits"></label>
       <select id="n"><option>3</option><option selected>4</option><option>5</option><option>6</option><option>8</option><option>10</option><option>12</option></select>
 
       <details class="backstage" id="backstage">
-        <summary>Coulisses : ce que fait vraiment le propriétaire (vous ne le savez pas)</summary>
-        <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="mystery" checked> Habitude tirée au hasard à chaque nouveau code</label>
-        <label for="rdir">Sens de rotation</label>
+        <summary data-i18n="backstage"></summary>
+        <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="mystery" checked> <span data-i18n="mystery"></span></label>
+        <label for="rdir" data-i18n="rdir"></label>
         <select id="rdir">
-          <option value="up" selected>Toujours vers le haut (+)</option>
-          <option value="down">Toujours vers le bas (−)</option>
-          <option value="any">Au hasard, dans les deux sens</option>
+          <option value="up" selected data-i18n="optUp"></option>
+          <option value="down" data-i18n="optDown"></option>
+          <option value="any" data-i18n="optAny"></option>
         </select>
         <div class="row2">
-          <div><label for="rmin">Crans min</label><input id="rmin" type="number" min="1" max="9" value="1"></div>
-          <div><label for="rmax">Crans max</label><input id="rmax" type="number" min="1" max="9" value="4"></div>
+          <div><label for="rmin" data-i18n="rmin"></label><input id="rmin" type="number" min="1" max="9" value="1"></div>
+          <div><label for="rmax" data-i18n="rmax"></label><input id="rmax" type="number" min="1" max="9" value="4"></div>
         </div>
-        <label for="pstay">Retombe sur le bon chiffre (tour complet, oubli) : <b id="pstayv">2 %</b></label>
+        <label for="pstay"><span data-i18n="pstay"></span> <b id="pstayv">2 %</b></label>
         <input id="pstay" type="range" min="0" max="30" value="2">
-        <label for="pwild">Rotation hors habitude (n'importe combien de crans) : <b id="pwildv">0 %</b></label>
+        <label for="pwild"><span data-i18n="pwild"></span> <b id="pwildv">0 %</b></label>
         <input id="pwild" type="range" min="0" max="30" value="0">
-        <div class="hint">Probabilités par roue et par jour.</div>
+        <div class="hint" data-i18n="perDay"></div>
       </details>
     </div>
 
@@ -154,7 +163,7 @@ canvas{width:100%;display:block}
         <div class="lockzone">
           <div class="shackle" id="shackle"></div>
           <div class="body" id="wheels"></div>
-          <div class="daylabel" id="daylabel">Jour 0 : pas encore d'observation</div>
+          <div class="daylabel" id="daylabel"></div>
           <div class="truecode" id="truecode"></div>
         </div>
         <div class="alert" id="alert"></div>
@@ -162,25 +171,25 @@ canvas{width:100%;display:block}
 
       <!-- Ranked codes -->
       <div class="card">
-        <h2>Codes les plus probables</h2>
-        <p class="hint" style="margin-top:0">Tous les codes classés selon leur probabilité d'être le bon, d'après les seuls relevés. Après « Dévoiler le code », le vrai code est surligné en vert.</p>
+        <h2 data-i18n="rankH"></h2>
+        <p class="hint" style="margin-top:0" data-i18n="rankHint"></p>
         <div id="inf"></div>
       </div>
 
       <!-- Evolution -->
       <div class="card">
-        <h2>Évolution jour après jour</h2>
-        <p class="hint" style="margin-top:0">En bleu : les chiffres qu'on voit sortir. En vert : la probabilité que chaque chiffre soit le bon.</p>
+        <h2 data-i18n="evoH"></h2>
+        <p class="hint" style="margin-top:0" data-i18n="evoHint"></p>
         <div class="freq" id="freq"></div>
         <div class="legend">
-          <span><i style="background:var(--accent);opacity:.75"></i>chiffres affichés</span>
-          <span><i style="background:var(--ok);opacity:.85"></i>probabilité d'être le bon chiffre</span>
-          <span><i style="background:var(--accent-soft)"></i>chiffre le plus probable</span>
-          <span><i style="border:2px solid var(--ok)"></i>vrai chiffre (après « Dévoiler »)</span>
+          <span><i style="background:var(--accent);opacity:.75"></i><span data-i18n="lgShown"></span></span>
+          <span><i style="background:var(--ok);opacity:.85"></i><span data-i18n="lgProb"></span></span>
+          <span><i style="background:var(--accent-soft)"></i><span data-i18n="lgTop"></span></span>
+          <span><i style="border:2px solid var(--ok)"></i><span data-i18n="lgTrue"></span></span>
         </div>
-        <h3 style="margin-top:18px">Confiance dans le code le plus probable</h3>
+        <h3 style="margin-top:18px" data-i18n="confH"></h3>
         <canvas id="conf" style="height:160px"></canvas>
-        <div class="hint">Probabilité du code en tête, jour après jour. Après « Dévoiler » : vert quand ce code est le bon, rouge sinon.</div>
+        <div class="hint" data-i18n="confHint"></div>
       </div>
     </div>
   </div>
@@ -189,7 +198,91 @@ canvas{width:100%;display:block}
 <script>
 const $ = id => document.getElementById(id);
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
-const fmt = x => x.toLocaleString('fr-FR');
+const I18N = {
+  fr: {
+    docTitle: 'Simulateur de cadenas',
+    title: 'Le cadenas qu’on referme toujours pareil',
+    lead: 'Chaque jour le propriétaire ouvre le cadenas (donc met le bon code), puis le referme en tournant les roues. Vous ne voyez que les chiffres affichés une fois fermé, et vous ne savez rien de ses habitudes. Le simulateur les tire au hasard en coulisses, puis devine le code à partir des seuls relevés.',
+    start: '▶ Démarrer', stop: '■ Arrêter', reveal: 'Dévoiler le code', hide: 'Cacher le code', newCode: 'Nouveau code',
+    speed: 'Vitesse :', digits: 'Nombre de chiffres',
+    backstage: 'Coulisses : ce que fait vraiment le propriétaire (vous ne le savez pas)',
+    mystery: 'Habitude tirée au hasard à chaque nouveau code', rdir: 'Sens de rotation',
+    optUp: 'Toujours vers le haut (+)', optDown: 'Toujours vers le bas (−)', optAny: 'Au hasard, dans les deux sens',
+    rmin: 'Crans min', rmax: 'Crans max',
+    pstay: 'Retombe sur le bon chiffre (tour complet, oubli) :', pwild: 'Rotation hors habitude (n’importe combien de crans) :',
+    perDay: 'Probabilités par roue et par jour.',
+    rankH: 'Codes les plus probables',
+    rankHint: 'Tous les codes classés selon leur probabilité d’être le bon, d’après les seuls relevés. Après « Dévoiler le code », le vrai code est surligné en vert.',
+    evoH: 'Évolution jour après jour',
+    evoHint: 'En bleu : les chiffres qu’on voit sortir. En vert : la probabilité que chaque chiffre soit le bon.',
+    lgShown: 'chiffres affichés', lgProb: 'probabilité d’être le bon chiffre', lgTop: 'chiffre le plus probable', lgTrue: 'vrai chiffre (après « Dévoiler »)',
+    confH: 'Confiance dans le code le plus probable',
+    confHint: 'Probabilité du code en tête, jour après jour. Après « Dévoiler » : vert quand ce code est le bon, rouge sinon.',
+    click1: 'cran', clicks: 'crans', range: (a, b) => `${a} à ${b} crans`,
+    up: 'vers le haut', down: 'vers le bas', both: 'dans les deux sens', ifTurns: 'si elle tourne ',
+    habit: (d, r, p0, pw) => `${d}, ${r}, ${p0} % de tours complets, ${pw} % de gestes inhabituels`,
+    day0: 'Jour 0 : pas encore d’observation', dayN: (n, c) => `Jour ${n} : cadenas fermé sur ${c}`,
+    trueCode: 'Vrai code :',
+    found: (n, c, p, h) => `Code trouvé au jour ${n} : ${c} (${p}), habitude « ${h} »`,
+    good: ' : c’est le bon.', bad: ' : ce n’est pas le bon.', autoStop: ' Arrêt automatique à 99 % (Démarrer pour continuer).',
+    running: (c, p) => `En cours : code le plus probable ${c} (${p}). Il faut encore des relevés pour en être sûr.`,
+    emptyRank: 'Démarrez la simulation : les codes candidats apparaîtront ici, classés par probabilité.',
+    tag: 'VRAI CODE', notTop: 'pas encore dans le haut du classement', realHabit: 'Habitude réelle (coulisses) :',
+    wheel: 'Roue', shownPct: 'Chiffres affichés (% des jours)', probPct: 'Probabilité d’être le bon chiffre (%)',
+    mostLikely: 'Le plus probable :', noObs: 'Pas encore de relevé.',
+    perSec: (d, many) => `${d} jour${many ? 's' : ''} par seconde`, pctSep: ' '
+  },
+  en: {
+    docTitle: 'Lock code simulator',
+    title: 'The lock that’s always closed the same way',
+    lead: 'Every day the owner opens the lock (so sets the right code), then closes it by turning the wheels. You only see the digits shown once it’s closed, and you know nothing about the owner’s habits. The simulator picks them at random backstage, then guesses the code from the observations alone.',
+    start: '▶ Start', stop: '■ Stop', reveal: 'Reveal code', hide: 'Hide code', newCode: 'New code',
+    speed: 'Speed:', digits: 'Number of digits',
+    backstage: 'Backstage: what the owner really does (you don’t know this)',
+    mystery: 'Random habit for each new code', rdir: 'Turning direction',
+    optUp: 'Always up (+)', optDown: 'Always down (−)', optAny: 'Random, both ways',
+    rmin: 'Min clicks', rmax: 'Max clicks',
+    pstay: 'Lands back on the right digit (full turn, forgot):', pwild: 'Unusual turn (any number of clicks):',
+    perDay: 'Probabilities per wheel and per day.',
+    rankH: 'Most likely codes',
+    rankHint: 'All codes ranked by their probability of being right, from the observations alone. After “Reveal code”, the true code is highlighted in green.',
+    evoH: 'Day by day',
+    evoHint: 'Blue: the digits we see. Green: the probability that each digit is the right one.',
+    lgShown: 'digits shown', lgProb: 'probability of being the right digit', lgTop: 'most likely digit', lgTrue: 'true digit (after “Reveal”)',
+    confH: 'Confidence in the most likely code',
+    confHint: 'Probability of the leading code, day by day. After “Reveal”: green when that code is right, red otherwise.',
+    click1: 'click', clicks: 'clicks', range: (a, b) => `${a} to ${b} clicks`,
+    up: 'upwards', down: 'downwards', both: 'both ways', ifTurns: 'if turned ',
+    habit: (d, r, p0, pw) => `${d}, ${r}, ${p0}% full turns, ${pw}% unusual turns`,
+    day0: 'Day 0: no observation yet', dayN: (n, c) => `Day ${n}: lock closed on ${c}`,
+    trueCode: 'True code:',
+    found: (n, c, p, h) => `Code found on day ${n}: ${c} (${p}), habit “${h}”`,
+    good: ': correct.', bad: ': wrong.', autoStop: ' Stopped automatically at 99% (press Start to continue).',
+    running: (c, p) => `In progress: most likely code ${c} (${p}). More observations are needed to be sure.`,
+    emptyRank: 'Start the simulation: candidate codes will appear here, ranked by probability.',
+    tag: 'TRUE CODE', notTop: 'not yet near the top', realHabit: 'Real habit (backstage):',
+    wheel: 'Wheel', shownPct: 'Digits shown (% of days)', probPct: 'Probability of being the right digit (%)',
+    mostLikely: 'Most likely:', noObs: 'No observation yet.',
+    perSec: (d, many) => `${d} day${many ? 's' : ''} per second`, pctSep: ''
+  }
+};
+let LANG = (() => {
+  const q = new URLSearchParams(location.search).get('lang');
+  if (q === 'fr' || q === 'en') return q;
+  try { const v = localStorage.getItem('cadenas-lang'); if (v === 'fr' || v === 'en') return v; } catch (e) {}
+  return (navigator.language || 'fr').toLowerCase().startsWith('fr') ? 'fr' : 'en';
+})();
+const T = () => I18N[LANG];
+const fmt = x => x.toLocaleString(LANG === 'fr' ? 'fr-FR' : 'en-US');
+const dec = s => LANG === 'fr' ? String(s).replace('.', ',') : String(s);
+function applyLang() {
+  document.documentElement.lang = LANG;
+  document.title = T().docTitle;
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = T()[el.dataset.i18n]; });
+  document.querySelectorAll('[data-lang]').forEach(b => b.classList.toggle('on', b.dataset.lang === LANG));
+  $('auto').textContent = timer ? T().stop : T().start;
+  $('reveal').textContent = revealed ? T().hide : T().reveal;
+}
 
 let S, timer = null, revealed = false;
 
@@ -212,10 +305,10 @@ function realOffset(c) {
 
 const emptyFreq = n => Array.from({ length: n }, () => Array(10).fill(0));
 const EPS = 0.03, LAMBDA = 0.7;
-const crans = (a, b) => a === b ? `${a} cran${a > 1 ? 's' : ''}` : `${a} à ${b} crans`;
+const crans = (a, b) => a === b ? `${a} ${a > 1 ? T().clicks : T().click1}` : T().range(a, b);
 const fmtCode = c => c.length > 6 ? c.join('') : c.join(' ');
 const STOP_AT = 0.99;
-const pctTxt = p => p >= .995 ? '> 99 %' : p < .01 ? '< 1 %' : Math.floor(p * 100) + ' %';
+const pctTxt = p => (p >= .995 ? '> 99' : p < .01 ? '< 1' : Math.floor(p * 100)) + T().pctSep + '%';
 
 // Every habit the owner could have: a contiguous range of offsets (one direction), or both directions
 const BEHAV = (() => {
@@ -224,13 +317,13 @@ const BEHAV = (() => {
     const ks = [];
     for (let k = lo; k <= hi; k++) ks.push(k);
     const up = hi, down = 10 - lo;
-    B.push({ ks, turn: Math.min(up, down), label: up <= down ? `vers le haut, ${crans(lo, hi)}` : `vers le bas, ${crans(10 - hi, 10 - lo)}` });
+    B.push({ ks, turn: Math.min(up, down), label: () => up <= down ? `${T().up}, ${crans(lo, hi)}` : `${T().down}, ${crans(10 - hi, 10 - lo)}` });
   }
   // both directions, lo..hi clicks (wider ranges are already contiguous intervals above)
   for (let lo = 1; lo <= 4; lo++) for (let hi = lo; hi <= 4; hi++) {
     const ks = [];
     for (let k = lo; k <= hi; k++) ks.push(k, 10 - k);
-    B.push({ ks, turn: hi, label: `dans les deux sens, ${crans(lo, hi)}` });
+    B.push({ ks, turn: hi, label: () => `${T().both}, ${crans(lo, hi)}` });
   }
   return B;
 })();
@@ -313,7 +406,7 @@ function codeProb(inf, code) {
   return pr;
 }
 
-function syncLabels() { $('pstayv').textContent = $('pstay').value + ' %'; $('pwildv').textContent = $('pwild').value + ' %'; }
+function syncLabels() { $('pstayv').textContent = $('pstay').value + T().pctSep + '%'; $('pwildv').textContent = $('pwild').value + T().pctSep + '%'; }
 function randomBehaviour() {
   const r = Math.random();
   $('rdir').value = r < .42 ? 'up' : r < .84 ? 'down' : 'any';
@@ -325,8 +418,8 @@ function randomBehaviour() {
   syncLabels();
 }
 function behaviourText(c) {
-  const d = c.rdir === 'up' ? 'vers le haut' : c.rdir === 'down' ? 'vers le bas' : 'dans les deux sens';
-  return `${d}, ${crans(c.rmin, c.rmax)}, ${Math.round(c.pstay * 100)} % de tours complets, ${Math.round(c.pwild * 100)} % de gestes inhabituels`;
+  const d = c.rdir === 'up' ? T().up : c.rdir === 'down' ? T().down : T().both;
+  return T().habit(d, crans(c.rmin, c.rmax), Math.round(c.pstay * 100), Math.round(c.pwild * 100));
 }
 
 function newGame() {
@@ -340,7 +433,7 @@ function newGame() {
     shown: Array.from({ length: n }, () => rnd(0, 9)),
     days: 0, freq: emptyFreq(n), inf: infer(emptyFreq(n), 0), conf: []
   };
-  $('reveal').textContent = 'Dévoiler le code';
+  $('reveal').textContent = T().reveal;
   document.documentElement.style.setProperty('--n', n);
   document.documentElement.classList.toggle('many', n > 6);
   renderWheels(false);
@@ -377,10 +470,10 @@ function renderWheels(anim) {
 
 function render() {
   const days = S.days;
-  $('daylabel').textContent = days ? `Jour ${days} : cadenas fermé sur ${fmtCode(S.shown)}` : 'Jour 0 : pas encore d\'observation';
+  $('daylabel').textContent = days ? T().dayN(days, fmtCode(S.shown)) : T().day0;
   const tc = $('truecode');
   tc.className = 'truecode' + (revealed ? ' on' : '');
-  tc.innerHTML = 'Vrai code : <b>' + fmtCode(revealed ? S.code : S.code.map(() => '?')) + '</b>';
+  tc.innerHTML = T().trueCode + ' <b>' + fmtCode(revealed ? S.code : S.code.map(() => '?')) + '</b>';
 
   const al = $('alert');
   if (!days) al.className = 'alert';
@@ -388,10 +481,10 @@ function render() {
     const t = S.inf[0], good = t.key === S.code.join('');
     if (t.p >= STOP_AT) {
       al.className = 'alert ' + (revealed && !good ? 'bad' : 'ok') + ' show';
-      al.textContent = `Code trouvé au jour ${days} : ${fmtCode(t.code)} (${pctTxt(t.p)}), habitude « ${t.b.label} »` + (revealed ? (good ? ' : c’est le bon.' : ' : ce n’est pas le bon.') : '.') + (timer ? '' : ' Arrêt automatique à 99 % (Démarrer pour continuer).');
+      al.textContent = T().found(days, fmtCode(t.code), pctTxt(t.p), t.b.label()) + (revealed ? (good ? T().good : T().bad) : '.') + (timer ? '' : T().autoStop);
     } else {
       al.className = 'alert info show';
-      al.textContent = `En cours : code le plus probable ${fmtCode(t.code)} (${pctTxt(t.p)}). Il faut encore des relevés pour en être sûr.`;
+      al.textContent = T().running(fmtCode(t.code), pctTxt(t.p));
     }
   }
   renderInf();
@@ -400,23 +493,23 @@ function render() {
 
 function renderInf() {
   const box = $('inf');
-  if (!S.days) { box.innerHTML = '<p class="hint">Démarrez la simulation : les codes candidats apparaîtront ici, classés par probabilité.</p>'; return; }
+  if (!S.days) { box.innerHTML = `<p class="hint">${T().emptyRank}</p>`; return; }
   const truth = S.code.join(''), top = S.inf.slice(0, 10);
-  const row = (n, g, p, ok, label) => `<div class="rrow${ok ? ' truth' : ''}"><span class="rn">${n}</span><span class="rc">${fmtCode(g)}</span><span class="rbar"><i style="width:${Math.max(.6, p * 100)}%"></i></span><span class="rp">${pctTxt(p)}</span><span class="rl">${ok ? '<b class="tag">VRAI CODE</b> ' : ''}${label}</span></div>`;
+  const row = (n, g, p, ok, label) => `<div class="rrow${ok ? ' truth' : ''}"><span class="rn">${n}</span><span class="rc">${fmtCode(g)}</span><span class="rbar"><i style="width:${Math.max(.6, p * 100)}%"></i></span><span class="rp">${pctTxt(p)}</span><span class="rl">${ok ? `<b class="tag">${T().tag}</b> ` : ''}${label}</span></div>`;
   let h = `<div class="rank" style="--cw:${S.n > 6 ? S.n + 1 : S.n * 2 + 1}ch">`;
-  top.forEach((g, i) => { h += row(i + 1, g.code, g.p, revealed && g.key === truth, 'si elle tourne ' + g.b.label); });
+  top.forEach((g, i) => { h += row(i + 1, g.code, g.p, revealed && g.key === truth, T().ifTurns + g.b.label()); });
   if (revealed && !top.some(g => g.key === truth)) {
     const idx = S.inf.findIndex(g => g.key === truth);
-    h += row(idx < 0 ? '…' : idx + 1, S.code, codeProb(S.inf, S.code), true, 'pas encore dans le haut du classement');
+    h += row(idx < 0 ? '…' : idx + 1, S.code, codeProb(S.inf, S.code), true, T().notTop);
   }
   h += '</div>';
-  if (revealed) h += `<p class="hint">Habitude réelle (coulisses) : <b>${behaviourText(cfg())}</b>.</p>`;
+  if (revealed) h += `<p class="hint">${T().realHabit} <b>${behaviourText(cfg())}</b>.</p>`;
   box.innerHTML = h;
 }
 
 function renderFreq() {
   const days = S.days, box = $('freq'), marg = S.inf.marg;
-  const pct = x => (x * 100).toFixed(x < .1 ? 1 : 0).replace('.', ',');
+  const pct = x => dec((x * 100).toFixed(x < .1 ? 1 : 0));
   box.innerHTML = '';
   S.freq.forEach((f, i) => {
     const max = Math.max(1, ...f);
@@ -424,15 +517,15 @@ function renderFreq() {
     const top = pm.indexOf(Math.max(...pm));
     const el = document.createElement('div');
     el.className = 'fw';
-    el.innerHTML = `<h4>Roue ${i + 1}</h4>
-      <div class="rowlbl">Chiffres affichés (% des jours)</div>
+    el.innerHTML = `<h4>${T().wheel} ${i + 1}</h4>
+      <div class="rowlbl">${T().shownPct}</div>
       <div class="bars">${f.map(x => `<div class="bar" style="height:${x / max * 100}%"></div>`).join('')}</div>
       <div class="bpct">${f.map(x => `<span>${days ? pct(x / days) : ''}</span>`).join('')}</div>
       <div class="blabels">${f.map((x, d) => `<span class="${days && d === top ? 'best' : ''} ${revealed && S.code[i] === d ? 'truth' : ''}">${d}</span>`).join('')}</div>
-      <div class="rowlbl">Probabilité d'être le bon chiffre (%)</div>
+      <div class="rowlbl">${T().probPct}</div>
       <div class="bars code">${pm.map(x => `<div class="bar" style="height:${x * 100}%"></div>`).join('')}</div>
       <div class="bpct">${pm.map(x => `<span>${days ? pct(x) : ''}</span>`).join('')}</div>
-      <div class="est">${days ? `Le plus probable : <b>${top}</b> (${pctTxt(pm[top])})` : 'Pas encore de relevé.'}</div>`;
+      <div class="est">${days ? `${T().mostLikely} <b>${top}</b> (${pctTxt(pm[top])})` : T().noObs}</div>`;
     box.appendChild(el);
   });
   drawConf();
@@ -476,25 +569,31 @@ function drawConf() {
 const DELAYS = [1000, 600, 400, 250, 150, 90, 50, 25, 10, 4];
 function syncSpeed() {
   const d = 1000 / DELAYS[$('speed').value - 1];
-  $('speedv').textContent = (d < 10 ? d.toFixed(d < 2 ? 1 : 0).replace('.', ',') : Math.round(d)) + ' jour' + (d >= 2 ? 's' : '') + ' par seconde';
+  $('speedv').textContent = T().perSec(d < 10 ? dec(d.toFixed(d < 2 ? 1 : 0)) : Math.round(d), d >= 2);
 }
-function stopAuto() { if (timer) clearInterval(timer); timer = null; $('auto').textContent = '▶ Démarrer'; }
+function stopAuto() { if (timer) clearInterval(timer); timer = null; $('auto').textContent = T().start; }
 function startAuto() {
   stopAuto();
   timer = setInterval(step, DELAYS[$('speed').value - 1]);
-  $('auto').textContent = '■ Arrêter';
+  $('auto').textContent = T().stop;
 }
 
 $('reset').onclick = newGame;
 $('n').onchange = newGame;
 $('auto').onclick = () => timer ? stopAuto() : startAuto();
 $('speed').oninput = () => { syncSpeed(); if (timer) startAuto(); };
-$('reveal').onclick = () => { revealed = !revealed; $('reveal').textContent = revealed ? 'Cacher le code' : 'Dévoiler le code'; render(); };
+$('reveal').onclick = () => { revealed = !revealed; $('reveal').textContent = revealed ? T().hide : T().reveal; render(); };
 $('pstay').oninput = syncLabels;
 $('pwild').oninput = syncLabels;
 window.addEventListener('resize', drawConf);
 if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', drawConf);
 
+document.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => {
+  LANG = b.dataset.lang;
+  try { localStorage.setItem('cadenas-lang', LANG); } catch (e) {}
+  applyLang(); syncLabels(); syncSpeed(); render();
+});
+applyLang();
 syncSpeed();
 newGame();
 </script>
