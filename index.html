@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulateur de cadenas</title>
+<style>
+:root{
+  --bg:#f6f5f2; --panel:#ffffff; --ink:#1d1d1f; --muted:#6b6b70; --line:#e2e0da;
+  --accent:#2f6fde; --accent-soft:#e3ecfc; --ok:#1f9d55; --ok-soft:#dcf3e5;
+  --bad:#d64545; --bad-soft:#fbe3e3; --metal:#c9ccd2; --metal-dark:#8e939c; --wheel:#2b2d31; --wheel-ink:#f4f4f4;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141416; --panel:#1e1f22; --ink:#ececee; --muted:#9a9aa2; --line:#33343a;
+    --accent:#6b9cff; --accent-soft:#22304d; --ok:#4cc985; --ok-soft:#1b3527;
+    --bad:#ff7070; --bad-soft:#3d2022; --metal:#8b9099; --metal-dark:#5b6068; --wheel:#0d0e10; --wheel-ink:#f4f4f4;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141416; --panel:#1e1f22; --ink:#ececee; --muted:#9a9aa2; --line:#33343a;
+  --accent:#6b9cff; --accent-soft:#22304d; --ok:#4cc985; --ok-soft:#1b3527;
+  --bad:#ff7070; --bad-soft:#3d2022; --metal:#8b9099; --metal-dark:#5b6068; --wheel:#0d0e10; --wheel-ink:#f4f4f4;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.6rem;margin:0 0 4px}
+.lead{color:var(--muted);margin:0 0 20px;max-width:780px}
+.layout{display:grid;grid-template-columns:320px 1fr;gap:18px;align-items:start}
+@media (max-width:860px){.layout{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card h2{font-size:1rem;margin:0 0 10px}
+.card h3{font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:16px 0 8px}
+.card h3:first-of-type{margin-top:0}
+label{display:block;font-size:.88rem;margin:8px 0 3px;color:var(--muted)}
+select,input[type=number]{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+input[type=range]{width:100%}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+button{font:inherit;padding:8px 13px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:hover{filter:brightness(1.05)}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+.main{display:grid;gap:18px;min-width:0}
+
+/* Lock */
+.lockzone{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 0 4px}
+.shackle{width:58%;max-width:300px;height:90px;border:18px solid var(--metal);border-bottom:none;border-radius:120px 120px 0 0;margin-bottom:-4px;transition:transform .35s}
+.shackle.open{transform:translateY(-26px)}
+.body{background:linear-gradient(180deg,var(--metal),var(--metal-dark));border-radius:18px;padding:18px 18px 14px;display:flex;gap:10px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.wheel{width:56px;height:118px;background:var(--wheel);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;position:relative;box-shadow:inset 0 10px 14px rgba(0,0,0,.6),inset 0 -10px 14px rgba(0,0,0,.6)}
+.wheel span{color:var(--wheel-ink);font:700 1.1rem ui-monospace,Consolas,monospace;opacity:.3;line-height:1.5}
+.wheel span.cur{font-size:2rem;opacity:1;line-height:1.3}
+.wheel.bump span.cur{animation:roll .35s ease}
+@keyframes roll{from{transform:translateY(-30px);opacity:0}to{transform:none;opacity:1}}
+@media (max-width:480px){.wheel{width:42px;height:100px}.wheel span.cur{font-size:1.6rem}.body{gap:6px;padding:14px 12px}}
+.daylabel{font-size:.9rem;color:var(--muted)}
+
+.alert{margin-top:10px;padding:9px 12px;border-radius:9px;font-size:.9rem;display:none}
+.alert.show{display:block}
+.alert.bad{background:var(--bad-soft);color:var(--bad)}
+.alert.info{background:var(--accent-soft);color:var(--accent)}
+.alert.ok{background:var(--ok-soft);color:var(--ok)}
+
+.freq{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
+.fw h4{margin:0 0 6px;font-size:.85rem;color:var(--muted);font-weight:600}
+.bars{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;align-items:end;height:80px;border-bottom:1px solid var(--line)}
+.bar{background:var(--accent);opacity:.75;border-radius:4px 4px 0 0;min-height:1px}
+.bars.code .bar{background:var(--ok);opacity:.85}
+.rowlbl{font-size:.72rem;color:var(--muted);margin:8px 0 2px}
+.blabels,.bpct{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;text-align:center}
+.blabels span{font:600 .85rem ui-monospace,Consolas,monospace;color:var(--muted);border-radius:5px;margin-top:3px;border:2px solid transparent}
+.blabels span.best{background:var(--accent-soft);color:var(--accent)}
+.blabels span.truth{border-color:var(--ok)}
+.bpct span{font-size:.62rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.est{font-size:.82rem;margin-top:6px;color:var(--muted)}
+.est b{color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.8rem;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:5px}
+
+.truecode{font-size:.95rem;color:var(--muted)}
+.truecode b{font:700 1.25rem ui-monospace,Consolas,monospace;letter-spacing:.12em;color:var(--ink)}
+.truecode.on b{color:var(--ok)}
+.rank{display:grid;gap:4px}
+.rrow{display:grid;grid-template-columns:26px var(--cw) 1fr 54px;column-gap:10px;align-items:center;padding:6px 8px;border-radius:8px}
+.rn{color:var(--muted);font-size:.8rem;font-variant-numeric:tabular-nums}
+.rc{font:700 1.05rem ui-monospace,Consolas,monospace}
+.rbar{height:10px;background:var(--bg);border-radius:5px;overflow:hidden}
+.rbar i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.rp{text-align:right;font-size:.85rem;font-variant-numeric:tabular-nums}
+.rl{grid-column:2 / -1;font-size:.74rem;color:var(--muted)}
+.rrow.truth{background:var(--ok-soft)}
+.rrow.truth .rbar i{background:var(--ok)}
+.rrow.truth .rc{color:var(--ok)}
+.tag{background:var(--ok);color:#fff;border-radius:4px;padding:0 5px;font-size:.66rem;letter-spacing:.04em}
+details.backstage{margin-top:18px;border:1px dashed var(--line);border-radius:10px;padding:8px 12px}
+details.backstage summary{cursor:pointer;font-size:.85rem;color:var(--muted);font-weight:600}
+canvas{width:100%;display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Le cadenas qu'on referme toujours pareil</h1>
+  <p class="lead">Chaque jour le propriétaire ouvre le cadenas (donc met le bon code), puis le referme en tournant les roues. Vous ne voyez que les chiffres affichés une fois fermé, et vous ne savez rien de ses habitudes. Le simulateur les tire au hasard en coulisses, puis devine le code à partir des seuls relevés.</p>
+
+  <div class="layout">
+    <!-- Controls -->
+    <div class="card">
+      <div class="btns" style="margin-top:0">
+        <button class="primary" id="auto" style="flex:1 1 100%;font-size:1.05rem;padding:11px">▶ Démarrer</button>
+        <button id="reveal" style="flex:1">Dévoiler le code</button>
+        <button id="reset" style="flex:1">Nouveau code</button>
+      </div>
+      <label for="speed">Vitesse : <b id="speedv"></b></label>
+      <input id="speed" type="range" min="1" max="10" value="4">
+
+      <label for="n" style="margin-top:14px">Nombre de chiffres</label>
+      <select id="n"><option>3</option><option selected>4</option><option>5</option><option>6</option></select>
+
+      <details class="backstage" id="backstage">
+        <summary>Coulisses : ce que fait vraiment le propriétaire (vous ne le savez pas)</summary>
+        <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="mystery" checked> Habitude tirée au hasard à chaque nouveau code</label>
+        <label for="rdir">Sens de rotation</label>
+        <select id="rdir">
+          <option value="up" selected>Toujours vers le haut (+)</option>
+          <option value="down">Toujours vers le bas (−)</option>
+          <option value="any">Au hasard, dans les deux sens</option>
+        </select>
+        <div class="row2">
+          <div><label for="rmin">Crans min</label><input id="rmin" type="number" min="1" max="9" value="1"></div>
+          <div><label for="rmax">Crans max</label><input id="rmax" type="number" min="1" max="9" value="4"></div>
+        </div>
+        <label for="pstay">Retombe sur le bon chiffre (tour complet, oubli) : <b id="pstayv">2 %</b></label>
+        <input id="pstay" type="range" min="0" max="30" value="2">
+        <label for="pwild">Rotation hors habitude (n'importe combien de crans) : <b id="pwildv">0 %</b></label>
+        <input id="pwild" type="range" min="0" max="30" value="0">
+        <div class="hint">Probabilités par roue et par jour.</div>
+      </details>
+    </div>
+
+    <div class="main">
+      <!-- Lock -->
+      <div class="card">
+        <div class="lockzone">
+          <div class="shackle" id="shackle"></div>
+          <div class="body" id="wheels"></div>
+          <div class="daylabel" id="daylabel">Jour 0 : pas encore d'observation</div>
+          <div class="truecode" id="truecode"></div>
+        </div>
+        <div class="alert" id="alert"></div>
+      </div>
+
+      <!-- Ranked codes -->
+      <div class="card">
+        <h2>Codes les plus probables</h2>
+        <p class="hint" style="margin-top:0">Tous les codes classés selon leur probabilité d'être le bon, d'après les seuls relevés. Après « Dévoiler le code », le vrai code est surligné en vert.</p>
+        <div id="inf"></div>
+      </div>
+
+      <!-- Evolution -->
+      <div class="card">
+        <h2>Évolution jour après jour</h2>
+        <p class="hint" style="margin-top:0">En bleu : les chiffres qu'on voit sortir. En vert : la probabilité que chaque chiffre soit le bon.</p>
+        <div class="freq" id="freq"></div>
+        <div class="legend">
+          <span><i style="background:var(--accent);opacity:.75"></i>chiffres affichés</span>
+          <span><i style="background:var(--ok);opacity:.85"></i>probabilité d'être le bon chiffre</span>
+          <span><i style="background:var(--accent-soft)"></i>chiffre le plus probable</span>
+          <span><i style="border:2px solid var(--ok)"></i>vrai chiffre (après « Dévoiler »)</span>
+        </div>
+        <h3 style="margin-top:18px">Confiance dans le code le plus probable</h3>
+        <canvas id="conf" style="height:160px"></canvas>
+        <div class="hint">Probabilité du code en tête, jour après jour. Après « Dévoiler » : vert quand ce code est le bon, rouge sinon.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const fmt = x => x.toLocaleString('fr-FR');
+
+let S, timer = null, revealed = false;
+
+function clamp(v) { return Math.min(9, Math.max(1, Math.round(v) || 1)); }
+function cfg() {
+  let rmin = clamp(+$('rmin').value), rmax = clamp(+$('rmax').value);
+  if (rmin > rmax) [rmin, rmax] = [rmax, rmin];
+  return { n: +$('n').value, rdir: $('rdir').value, rmin, rmax, pstay: +$('pstay').value / 100, pwild: +$('pwild').value / 100 };
+}
+
+// What the owner really does (hidden): offset k such that shown digit = code + k (mod 10)
+function realOffset(c) {
+  const r = Math.random();
+  if (r < c.pstay) return 0;                      // full turn / forgot: lands on the right digit
+  if (r < c.pstay + c.pwild) return rnd(1, 9);    // unusual gesture
+  const k = rnd(c.rmin, c.rmax);
+  const dir = c.rdir === 'up' ? 1 : c.rdir === 'down' ? -1 : (Math.random() < .5 ? 1 : -1);
+  return (10 + dir * k) % 10;
+}
+
+const emptyFreq = n => Array.from({ length: n }, () => Array(10).fill(0));
+const EPS = 0.03, LAMBDA = 0.7;
+const crans = (a, b) => a === b ? `${a} cran${a > 1 ? 's' : ''}` : `${a} à ${b} crans`;
+const pctTxt = p => p >= .995 ? '> 99 %' : p < .01 ? '< 1 %' : Math.floor(p * 100) + ' %';
+
+// Every habit the owner could have: a contiguous range of offsets (one direction), or both directions
+const BEHAV = (() => {
+  const B = [];
+  for (let lo = 1; lo <= 9; lo++) for (let hi = lo; hi <= 9; hi++) {
+    const ks = [];
+    for (let k = lo; k <= hi; k++) ks.push(k);
+    const up = hi, down = 10 - lo;
+    B.push({ ks, turn: Math.min(up, down), label: up <= down ? `vers le haut, ${crans(lo, hi)}` : `vers le bas, ${crans(10 - hi, 10 - lo)}` });
+  }
+  // both directions, lo..hi clicks (wider ranges are already contiguous intervals above)
+  for (let lo = 1; lo <= 4; lo++) for (let hi = lo; hi <= 4; hi++) {
+    const ks = [];
+    for (let k = lo; k <= hi; k++) ks.push(k, 10 - k);
+    B.push({ ks, turn: hi, label: `dans les deux sens, ${crans(lo, hi)}` });
+  }
+  return B;
+})();
+
+// For each habit, fit a 3-part offset model by maximum likelihood: uniform inside the habit range,
+// a separate (rare) mass on offset 0 (full turn / forgot = the code itself), uniform elsewhere.
+// That offset-0 bump is what tells apart habits that are shifted copies of each other.
+// Returns candidate codes sorted by probability (mixture over habits), plus per-wheel digit probabilities.
+function infer(freq, N) {
+  const n = freq.length, M = N * n, res = [];
+  for (const b of BEHAV) {
+    const K = b.ks.length;
+    let Tin = 0, Z0 = 0;
+    for (let i = 0; i < n; i++) {
+      let best = -1, bz = -1;
+      for (let c = 0; c < 10; c++) {
+        let t = 0;
+        for (const k of b.ks) t += freq[i][(c + k) % 10];
+        const z = freq[i][c];
+        if (t > best || (t === best && z > bz)) { best = t; bz = z; }
+      }
+      Tin += best; Z0 += bz;
+    }
+    const R = M - Tin - Z0;
+    let pin = (Tin + .5) / (M + 1.5), p0 = (Z0 + .5) / (M + 1.5), po = (R + .5) / (M + 1.5);
+    if (p0 > 0.1) { const f = 0.9 / (pin + po); p0 = 0.1; pin *= f; po *= f; } // landing on the code stays rare
+    const la = Math.log(pin / K), l0 = Math.log(p0), lo = K < 9 ? Math.log(po / (9 - K)) : 0;
+    const post = [];
+    for (let i = 0; i < n; i++) {
+      const l = [];
+      let m = -Infinity;
+      for (let c = 0; c < 10; c++) {
+        let t = 0;
+        for (const k of b.ks) t += freq[i][(c + k) % 10];
+        const z = freq[i][c], v = t * la + z * l0 + (N - t - z) * lo;
+        l.push(v);
+        if (v > m) m = v;
+      }
+      let sum = 0;
+      const e = l.map(v => { const x = Math.exp(v - m); sum += x; return x; });
+      post.push(e.map(x => x / sum));
+    }
+    res.push({ ll: Tin * la + Z0 * l0 + R * lo - LAMBDA * b.turn, b, post });
+  }
+  const mx = Math.max(...res.map(r => r.ll));
+  let Z = 0;
+  res.forEach(r => { r.w = Math.exp(r.ll - mx); Z += r.w; });
+  const marg = emptyFreq(n);
+  for (const r of res) for (let i = 0; i < n; i++) for (let c = 0; c < 10; c++) marg[i][c] += r.w / Z * r.post[i][c];
+  // Candidate codes: the most likely digits of each wheel, then the exact probability of each combination
+  const act = res.filter(r => r.w / Z > 1e-6);
+  const lists = marg.map(m => {
+    const idx = [...Array(10).keys()].sort((a, b) => m[b] - m[a]);
+    const cap = n >= 5 ? 3 : 4;
+    return idx.filter((d, k) => k === 0 || (k < cap && m[d] >= 0.01));
+  });
+  let combos = [[]];
+  for (const L of lists) { const nx = []; for (const cc of combos) for (const d of L) nx.push([...cc, d]); combos = nx; }
+  const out = combos.map(code => {
+    let pr = 0, bw = -1, bb = act[0].b;
+    for (const r of act) {
+      let q = r.w / Z;
+      for (let i = 0; i < n; i++) q *= r.post[i][code[i]];
+      pr += q;
+      if (q > bw) { bw = q; bb = r.b; }
+    }
+    return { key: code.join(''), code, p: pr, b: bb };
+  }).sort((a, b) => b.p - a.p);
+  out.marg = marg; out.act = act; out.Z = Z;
+  return out;
+}
+// Exact probability of any code (for the true code when it is not among the candidates)
+function codeProb(inf, code) {
+  let pr = 0;
+  for (const r of inf.act) { let q = r.w / inf.Z; code.forEach((c, i) => { q *= r.post[i][c]; }); pr += q; }
+  return pr;
+}
+
+function syncLabels() { $('pstayv').textContent = $('pstay').value + ' %'; $('pwildv').textContent = $('pwild').value + ' %'; }
+function randomBehaviour() {
+  const r = Math.random();
+  $('rdir').value = r < .42 ? 'up' : r < .84 ? 'down' : 'any';
+  const mn = rnd(1, 2);
+  $('rmin').value = mn;
+  $('rmax').value = Math.min(9, mn + rnd(1, 4));
+  $('pstay').value = rnd(0, 4);
+  $('pwild').value = rnd(0, 2);
+  syncLabels();
+}
+function behaviourText(c) {
+  const d = c.rdir === 'up' ? 'vers le haut' : c.rdir === 'down' ? 'vers le bas' : 'dans les deux sens';
+  return `${d}, ${crans(c.rmin, c.rmax)}, ${Math.round(c.pstay * 100)} % de tours complets, ${Math.round(c.pwild * 100)} % de gestes inhabituels`;
+}
+
+function newGame() {
+  stopAuto();
+  const n = +$('n').value;
+  revealed = false;
+  if ($('mystery').checked) { randomBehaviour(); $('backstage').open = false; }
+  S = {
+    n,
+    code: Array.from({ length: n }, () => rnd(0, 9)),
+    shown: Array.from({ length: n }, () => rnd(0, 9)),
+    days: 0, freq: emptyFreq(n), inf: infer(emptyFreq(n), 0), conf: []
+  };
+  $('reveal').textContent = 'Dévoiler le code';
+  renderWheels(false);
+  render();
+}
+
+function step() {
+  const c = cfg();
+  const sh = $('shackle');
+  sh.classList.add('open');
+  setTimeout(() => sh.classList.remove('open'), 300);
+  const d = S.code.map(ci => (ci + realOffset(c)) % 10);
+  S.days++;
+  S.shown = d;
+  d.forEach((x, i) => S.freq[i][x]++);
+  S.inf = infer(S.freq, S.days);
+  S.conf.push({ p: S.inf[0].p, key: S.inf[0].key });
+  renderWheels(true);
+  render();
+}
+
+function renderWheels(anim) {
+  const w = $('wheels');
+  w.innerHTML = '';
+  S.shown.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'wheel' + (anim ? ' bump' : '');
+    el.innerHTML = `<span>${(d + 9) % 10}</span><span class="cur">${d}</span><span>${(d + 1) % 10}</span>`;
+    w.appendChild(el);
+  });
+}
+
+function render() {
+  const days = S.days;
+  $('daylabel').textContent = days ? `Jour ${days} : cadenas fermé sur ${S.shown.join(' ')}` : 'Jour 0 : pas encore d\'observation';
+  const tc = $('truecode');
+  tc.className = 'truecode' + (revealed ? ' on' : '');
+  tc.innerHTML = 'Vrai code : <b>' + (revealed ? S.code.join(' ') : S.code.map(() => '?').join(' ')) + '</b>';
+
+  const al = $('alert');
+  if (!days) al.className = 'alert';
+  else {
+    const t = S.inf[0], good = t.key === S.code.join('');
+    if (t.p >= .95) {
+      al.className = 'alert ' + (revealed && !good ? 'bad' : 'ok') + ' show';
+      al.textContent = `Code trouvé au jour ${days} : ${t.code.join(' ')} (${pctTxt(t.p)}), habitude « ${t.b.label} »` + (revealed ? (good ? ' : correct.' : ' : faux.') : '.');
+    } else {
+      al.className = 'alert info show';
+      al.textContent = `En cours : code le plus probable ${t.code.join(' ')} (${pctTxt(t.p)}). Il faut encore des relevés pour en être sûr.`;
+    }
+  }
+  renderInf();
+  renderFreq();
+}
+
+function renderInf() {
+  const box = $('inf');
+  if (!S.days) { box.innerHTML = '<p class="hint">Démarrez la simulation : les codes candidats apparaîtront ici, classés par probabilité.</p>'; return; }
+  const truth = S.code.join(''), top = S.inf.slice(0, 10);
+  const row = (n, g, p, ok, label) => `<div class="rrow${ok ? ' truth' : ''}"><span class="rn">${n}</span><span class="rc">${g.join(' ')}</span><span class="rbar"><i style="width:${Math.max(.6, p * 100)}%"></i></span><span class="rp">${pctTxt(p)}</span><span class="rl">${ok ? '<b class="tag">VRAI CODE</b> ' : ''}${label}</span></div>`;
+  let h = `<div class="rank" style="--cw:${S.n * 2 + 1}ch">`;
+  top.forEach((g, i) => { h += row(i + 1, g.code, g.p, revealed && g.key === truth, 'si elle tourne ' + g.b.label); });
+  if (revealed && !top.some(g => g.key === truth)) {
+    const idx = S.inf.findIndex(g => g.key === truth);
+    h += row(idx < 0 ? '…' : idx + 1, S.code, codeProb(S.inf, S.code), true, 'pas encore dans le haut du classement');
+  }
+  h += '</div>';
+  if (revealed) h += `<p class="hint">Habitude réelle (coulisses) : <b>${behaviourText(cfg())}</b>.</p>`;
+  box.innerHTML = h;
+}
+
+function renderFreq() {
+  const days = S.days, box = $('freq'), marg = S.inf.marg;
+  const pct = x => (x * 100).toFixed(x < .1 ? 1 : 0).replace('.', ',');
+  box.innerHTML = '';
+  S.freq.forEach((f, i) => {
+    const max = Math.max(1, ...f);
+    const pm = marg[i];
+    const top = pm.indexOf(Math.max(...pm));
+    const el = document.createElement('div');
+    el.className = 'fw';
+    el.innerHTML = `<h4>Roue ${i + 1}</h4>
+      <div class="rowlbl">Chiffres affichés (% des jours)</div>
+      <div class="bars">${f.map(x => `<div class="bar" style="height:${x / max * 100}%"></div>`).join('')}</div>
+      <div class="bpct">${f.map(x => `<span>${days ? pct(x / days) : ''}</span>`).join('')}</div>
+      <div class="blabels">${f.map((x, d) => `<span class="${days && d === top ? 'best' : ''} ${revealed && S.code[i] === d ? 'truth' : ''}">${d}</span>`).join('')}</div>
+      <div class="rowlbl">Probabilité d'être le bon chiffre (%)</div>
+      <div class="bars code">${pm.map(x => `<div class="bar" style="height:${x * 100}%"></div>`).join('')}</div>
+      <div class="bpct">${pm.map(x => `<span>${days ? pct(x) : ''}</span>`).join('')}</div>
+      <div class="est">${days ? `Le plus probable : <b>${top}</b> (${pctTxt(pm[top])})` : 'Pas encore de relevé.'}</div>`;
+    box.appendChild(el);
+  });
+  drawConf();
+}
+
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+function drawConf() {
+  const cv = $('conf'), dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth, H = cv.clientHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+  const x = cv.getContext('2d');
+  x.scale(dpr, dpr);
+  x.clearRect(0, 0, W, H);
+  const pad = { l: 40, r: 12, t: 8, b: 22 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+  const len = S.conf.length, maxD = Math.max(10, len);
+  const xOf = d => pad.l + pw * d / maxD, yOf = p => pad.t + ph * (1 - p);
+  x.font = '11px system-ui'; x.fillStyle = css('--muted'); x.strokeStyle = css('--line'); x.lineWidth = 1;
+  [0, .5, 1].forEach(p => {
+    x.beginPath(); x.moveTo(pad.l, yOf(p)); x.lineTo(W - pad.r, yOf(p)); x.stroke();
+    x.textAlign = 'right'; x.fillText(Math.round(p * 100) + ' %', pad.l - 6, yOf(p) + 4);
+  });
+  x.textAlign = 'center';
+  const stepX = Math.ceil(maxD / 8);
+  for (let d = 0; d <= maxD; d += stepX) x.fillText(fmt(d), xOf(d), H - 6);
+  if (!len) return;
+  const truth = S.code.join(''), every = Math.max(1, Math.floor(len / pw));
+  const col = e => !revealed ? css('--accent') : e.key === truth ? css('--ok') : css('--bad');
+  x.lineWidth = 2.5;
+  let prev = null;
+  for (let j = 0; j < len; j += every) {
+    const e = S.conf[j], px = xOf(j + 1), py = yOf(e.p);
+    if (prev) { x.strokeStyle = col(e); x.beginPath(); x.moveTo(prev[0], prev[1]); x.lineTo(px, py); x.stroke(); }
+    prev = [px, py];
+  }
+  const last = S.conf[len - 1];
+  x.fillStyle = col(last); x.beginPath(); x.arc(xOf(len), yOf(last.p), 4, 0, 7); x.fill();
+}
+
+const DELAYS = [1000, 600, 400, 250, 150, 90, 50, 25, 10, 4];
+function syncSpeed() {
+  const d = 1000 / DELAYS[$('speed').value - 1];
+  $('speedv').textContent = (d < 10 ? d.toFixed(d < 2 ? 1 : 0).replace('.', ',') : Math.round(d)) + ' jour' + (d >= 2 ? 's' : '') + ' par seconde';
+}
+function stopAuto() { if (timer) clearInterval(timer); timer = null; $('auto').textContent = '▶ Démarrer'; }
+function startAuto() {
+  stopAuto();
+  timer = setInterval(step, DELAYS[$('speed').value - 1]);
+  $('auto').textContent = '■ Arrêter';
+}
+
+$('reset').onclick = newGame;
+$('n').onchange = newGame;
+$('auto').onclick = () => timer ? stopAuto() : startAuto();
+$('speed').oninput = () => { syncSpeed(); if (timer) startAuto(); };
+$('reveal').onclick = () => { revealed = !revealed; $('reveal').textContent = revealed ? 'Cacher le code' : 'Dévoiler le code'; render(); };
+$('pstay').oninput = syncLabels;
+$('pwild').oninput = syncLabels;
+window.addEventListener('resize', drawConf);
+if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', drawConf);
+
+syncSpeed();
+newGame();
+</script>
+</body>
+</html>
